@@ -1,0 +1,5 @@
+[workspace]
+members = [
+    "src/egui-demo",
+]
+resolver = "3"
