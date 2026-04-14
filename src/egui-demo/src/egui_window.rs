@@ -1,3 +1,6 @@
+// Taken from https://github.com/unknowntrojan/egui-d3d9/blob/master/example/src/lib.rs
+// Which should be under the MIT license by unknowntrojan
+// Copyright (c) unknowntrojan
 
 use egui::{
     Align2,

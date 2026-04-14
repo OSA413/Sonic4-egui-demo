@@ -1,10 +1,10 @@
+// Taken from https://github.com/ohchase/shroud/tree/copilot/fix-4fe0fc7d-d5ea-4f92-b5a9-792b1abf5541
+// Which should be under the MIT license by ohchase
+// Copyright (c) 2025 ohchase
+
 use windows::{
     Win32::{
-        Foundation::{
-            HWND,
-            LPARAM,
-            BOOL,
-        },
+        Foundation::{HWND, LPARAM, BOOL},
         UI::WindowsAndMessaging::{
             EnumWindows,
             GetWindow,
@@ -15,8 +15,6 @@ use windows::{
     },
 };
 
-// Taken from https://github.com/ohchase/shroud/tree/copilot/fix-4fe0fc7d-d5ea-4f92-b5a9-792b1abf5541
-// Which should by under the MIT license by ohchase
 pub fn get_process_window() -> Option<HWND> {
     unsafe extern "system" fn enum_windows_callback(hwnd: HWND, l_param: LPARAM) -> BOOL {
         let mut wnd_proc_id: u32 = 0;
