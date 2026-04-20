@@ -58,6 +58,7 @@ pub fn ui(ctx: &Context, i: &mut i32) {
             egui_extras::install_image_loaders(ctx);
         });
 
+        #[allow(static_mut_refs)]
         if TEXT.is_none() {
             TEXT = Some(String::from("Test"));
         }
@@ -92,21 +93,28 @@ pub fn ui(ctx: &Context, i: &mut i32) {
             ));
 
             if ui.input(|input| {
-                input.modifiers.matches(Modifiers::CTRL) && input.key_pressed(Key::R)
+                input.modifiers.matches_logically(Modifiers::CTRL)
+                && input.key_pressed(Key::R)
             }) {
                 println!("Pressed");
             }
 
+            #[allow(static_mut_refs)]
             ui.checkbox(&mut UI_CHECK, "Some checkbox");
+            
+            #[allow(static_mut_refs)]
             ui.text_edit_singleline(TEXT.as_mut().unwrap());
+
             ScrollArea::vertical().max_height(200.).show(ui, |ui| {
                 for i in 1..=100 {
                     ui.label(format!("Label: {}", i));
                 }
             });
 
+            #[allow(static_mut_refs)]
             Slider::new(&mut VALUE, -1.0..=1.0).ui(ui);
 
+            #[allow(static_mut_refs)]
             ui.color_edit_button_rgb(&mut COLOR);
         
 

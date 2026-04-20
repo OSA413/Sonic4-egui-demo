@@ -95,21 +95,24 @@ fn hk_present(
     window: HWND,
     rgn_data: *const RGNDATA,
 ) -> HRESULT {
-    unsafe {
-        static INIT: Once = Once::new();
+    static INIT: Once = Once::new();
+    
+    INIT.call_once(|| {
+        let window = get_process_window::get_process_window().unwrap();
 
-        INIT.call_once(|| {
-            let window = get_process_window::get_process_window().unwrap();
-
+        unsafe {
             APP = Some(EguiDx9::init(&dev, window, egui_window::ui, 0, true));
-
+            
             OLD_WND_PROC = Some(std::mem::transmute(SetWindowLongPtrA(
                 window,
                 GWLP_WNDPROC,
-                hk_wnd_proc as usize as _,
+                hk_wnd_proc as *const() as i32,
             )));
-        });
-
+        }
+    });
+        
+    unsafe {
+        #[allow(static_mut_refs)]
         APP.as_mut().unwrap().present(&dev);
 
         PresentHook.call(dev, source_rect, dest_rect, window, rgn_data)
@@ -121,6 +124,7 @@ fn hk_reset(
     presentation_parameters: *const D3DPRESENT_PARAMETERS,
 ) -> HRESULT {
     unsafe {
+        #[warn(static_mut_refs)]
         APP.as_mut().unwrap().pre_reset();
 
         ResetHook.call(dev, presentation_parameters)
@@ -133,13 +137,18 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    APP.as_mut().unwrap().wnd_proc(msg, wparam, lparam);
-    CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
+    unsafe {
+        #[allow(static_mut_refs)]
+        APP.as_mut().unwrap().wnd_proc(msg, wparam, lparam);
+        CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
+    }
 }
 
 unsafe extern "system" fn start_routine(_parameter: *mut std::ffi::c_void) -> u32 {
     std::thread::sleep(Duration::from_secs(5));
-    main_thread(_parameter as usize);
+    unsafe {
+        main_thread(_parameter as usize);
+    }
     0
 }
 
@@ -148,21 +157,23 @@ unsafe fn main_thread(_hinst: usize) {
 
     let reset = methods.device_vmt()[16];
     let present = methods.device_vmt()[17];
+    
+    unsafe {
+        let present: FnPresent = std::mem::transmute(present);
+        let reset: FnReset = std::mem::transmute(reset);
 
-    let present: FnPresent = std::mem::transmute(present);
-    let reset: FnReset = std::mem::transmute(reset);
+        PresentHook
+            .initialize(present, hk_present)
+            .unwrap()
+            .enable()
+            .unwrap();
 
-    PresentHook
-        .initialize(present, hk_present)
-        .unwrap()
-        .enable()
-        .unwrap();
-
-    ResetHook
-        .initialize(reset, hk_reset)
-        .unwrap()
-        .enable()
-        .unwrap();
+        ResetHook
+            .initialize(reset, hk_reset)
+            .unwrap()
+            .enable()
+            .unwrap();
+    }
 }
 
 #[unsafe(no_mangle)]
