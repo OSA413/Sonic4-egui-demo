@@ -57,7 +57,7 @@ unsafe extern "C" fn PostInit() {
 }
 
 static APP: LazyLock<Mutex<RwLock<MaybeUninit<EguiDx9<i32>>>>> = LazyLock::new(|| Mutex::new(RwLock::new(MaybeUninit::uninit())));
-static OLD_WND_PROC: LazyLock<Mutex<RwLock<MaybeUninit<WNDPROC>>>> = LazyLock::new(|| Mutex::new(RwLock::new((MaybeUninit::uninit()))));
+static OLD_WND_PROC: LazyLock<Mutex<WNDPROC>> = LazyLock::new(|| Mutex::new(None));
 
 static_detour! {
     static PresentHook: unsafe extern "stdcall" fn(
@@ -108,12 +108,11 @@ fn hk_present(
             
             {
                 let mut old_wnd_proc_writable = OLD_WND_PROC.lock().unwrap();
-                let mut old_wnd_proc_writable = old_wnd_proc_writable.get_mut().unwrap();
-                old_wnd_proc_writable.write(std::mem::transmute(SetWindowLongPtrA(
+                *old_wnd_proc_writable = std::mem::transmute(SetWindowLongPtrA(
                     window,
                     GWLP_WNDPROC,
                     hk_wnd_proc as *const() as i32,
-                )));
+                ));
             }
         }
     });
@@ -158,9 +157,12 @@ unsafe extern "stdcall" fn hk_wnd_proc(
         let result = {
             match OLD_WND_PROC.try_lock() {
                 Ok(mut old_wnd_proc) => {
-                    CallWindowProcW(old_wnd_proc.read().unwrap().assume_init(), hwnd, msg, wparam, lparam)
+                    CallWindowProcW(old_wnd_proc.clone(), hwnd, msg, wparam, lparam)
                 },
-                Err(_) => LRESULT(0),
+                Err(_) => {
+                    println!("Event skipped! hwnd={:?}, msg={:?}, wparam={:?}, lparam={:?}", hwnd, msg, wparam, lparam);
+                    LRESULT(0)
+                }
             }
         };
         
