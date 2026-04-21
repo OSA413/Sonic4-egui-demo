@@ -20,7 +20,6 @@ use windows::{
             HMODULE,
             HWND,
             LPARAM,
-            BOOL,
             LRESULT,
             RECT,
             WPARAM
@@ -42,9 +41,9 @@ use windows::{
 };
 use retour::static_detour;
 use egui_d3d9::EguiDx9;
+use windows_core::BOOL;
 use std::{
-    sync::Once,
-    time::Duration,
+    cell::RefCell, mem::MaybeUninit, ops::DerefMut, sync::{Arc, LazyLock, Mutex, Once, RwLock}, time::Duration
 };
 
 #[unsafe(no_mangle)]
@@ -57,8 +56,8 @@ unsafe extern "C" fn PostInit() {
     println!("PostInit called");
 }
 
-static mut APP: Option<EguiDx9<i32>> = None;
-static mut OLD_WND_PROC: Option<WNDPROC> = None;
+static APP: LazyLock<Mutex<RwLock<MaybeUninit<EguiDx9<i32>>>>> = LazyLock::new(|| Mutex::new(RwLock::new(MaybeUninit::uninit())));
+static OLD_WND_PROC: LazyLock<Mutex<RwLock<MaybeUninit<WNDPROC>>>> = LazyLock::new(|| Mutex::new(RwLock::new((MaybeUninit::uninit()))));
 
 static_detour! {
     static PresentHook: unsafe extern "stdcall" fn(
@@ -101,19 +100,26 @@ fn hk_present(
         let window = get_process_window::get_process_window().unwrap();
 
         unsafe {
-            APP = Some(EguiDx9::init(&dev, window, egui_window::ui, 0, true));
+            {
+                let mut app_writable = APP.lock().unwrap();
+                let mut app_writable = app_writable.get_mut().unwrap();
+                app_writable.write(EguiDx9::init(&dev, window, egui_window::ui, 0, true));
+            }
             
-            OLD_WND_PROC = Some(std::mem::transmute(SetWindowLongPtrA(
-                window,
-                GWLP_WNDPROC,
-                hk_wnd_proc as *const() as i32,
-            )));
+            {
+                let mut old_wnd_proc_writable = OLD_WND_PROC.lock().unwrap();
+                let mut old_wnd_proc_writable = old_wnd_proc_writable.get_mut().unwrap();
+                old_wnd_proc_writable.write(std::mem::transmute(SetWindowLongPtrA(
+                    window,
+                    GWLP_WNDPROC,
+                    hk_wnd_proc as *const() as i32,
+                )));
+            }
         }
     });
         
     unsafe {
-        #[allow(static_mut_refs)]
-        APP.as_mut().unwrap().present(&dev);
+        APP.lock().unwrap().get_mut().unwrap().assume_init_mut().present(&dev);
 
         PresentHook.call(dev, source_rect, dest_rect, window, rgn_data)
     }
@@ -124,8 +130,7 @@ fn hk_reset(
     presentation_parameters: *const D3DPRESENT_PARAMETERS,
 ) -> HRESULT {
     unsafe {
-        #[warn(static_mut_refs)]
-        APP.as_mut().unwrap().pre_reset();
+        APP.lock().unwrap().get_mut().unwrap().assume_init_mut().pre_reset();
 
         ResetHook.call(dev, presentation_parameters)
     }
@@ -138,9 +143,8 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     lparam: LPARAM,
 ) -> LRESULT {
     unsafe {
-        #[allow(static_mut_refs)]
-        APP.as_mut().unwrap().wnd_proc(msg, wparam, lparam);
-        CallWindowProcW(OLD_WND_PROC.unwrap(), hwnd, msg, wparam, lparam)
+        APP.lock().unwrap().get_mut().unwrap().assume_init_mut().wnd_proc(msg, wparam, lparam);
+        CallWindowProcW(OLD_WND_PROC.lock().unwrap().read().unwrap().assume_init(), hwnd, msg, wparam, lparam)
     }
 }
 

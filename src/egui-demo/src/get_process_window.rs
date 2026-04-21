@@ -4,7 +4,7 @@
 
 use windows::{
     Win32::{
-        Foundation::{HWND, LPARAM, BOOL},
+        Foundation::{HWND, LPARAM},
         UI::WindowsAndMessaging::{
             EnumWindows,
             GetWindow,
@@ -16,7 +16,7 @@ use windows::{
 };
 
 pub fn get_process_window() -> Option<HWND> {
-    unsafe extern "system" fn enum_windows_callback(hwnd: HWND, l_param: LPARAM) -> BOOL {
+    unsafe extern "system" fn enum_windows_callback(hwnd: HWND, l_param: LPARAM) -> windows_core::BOOL {
         let mut wnd_proc_id: u32 = 0;
         unsafe {
             GetWindowThreadProcessId(hwnd, Some(&mut wnd_proc_id));
