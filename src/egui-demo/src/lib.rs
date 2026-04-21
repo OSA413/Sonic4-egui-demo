@@ -119,7 +119,7 @@ fn hk_present(
     });
         
     unsafe {
-        APP.lock().unwrap().get_mut().unwrap().assume_init_mut().present(&dev);
+        APP.try_lock().unwrap().get_mut().unwrap().assume_init_mut().present(&dev);
 
         PresentHook.call(dev, source_rect, dest_rect, window, rgn_data)
     }
@@ -142,9 +142,29 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
+    // This method is spammed like 60 frames per second ...
     unsafe {
-        APP.lock().unwrap().get_mut().unwrap().assume_init_mut().wnd_proc(msg, wparam, lparam);
-        CallWindowProcW(OLD_WND_PROC.lock().unwrap().read().unwrap().assume_init(), hwnd, msg, wparam, lparam)
+        {
+            match APP.try_lock() {
+                Ok(mut app) => {
+                    app.get_mut().unwrap().assume_init_mut().wnd_proc(msg, wparam, lparam);
+                }
+                Err(_) => {}
+            }
+        }
+        // ... and sometimes, SOMETIMES it pushes two events at the same time making
+        // it freeze unless you handle the lock and skip some of the events.
+        // The "sometimes" means "after you release the mouse button after clicking or dragging someting".
+        let result = {
+            match OLD_WND_PROC.try_lock() {
+                Ok(mut old_wnd_proc) => {
+                    CallWindowProcW(old_wnd_proc.read().unwrap().assume_init(), hwnd, msg, wparam, lparam)
+                },
+                Err(_) => LRESULT(0),
+            }
+        };
+        
+        result
     }
 }
 
