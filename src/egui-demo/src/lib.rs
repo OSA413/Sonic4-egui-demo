@@ -57,7 +57,7 @@ unsafe extern "C" fn PostInit() {
 }
 
 static APP: LazyLock<Mutex<RwLock<MaybeUninit<EguiDx9<i32>>>>> = LazyLock::new(|| Mutex::new(RwLock::new(MaybeUninit::uninit())));
-static OLD_WND_PROC: LazyLock<Mutex<WNDPROC>> = LazyLock::new(|| Mutex::new(None));
+static OLD_WND_PROC: LazyLock<RwLock<WNDPROC>> = LazyLock::new(|| RwLock::new(None));
 
 static_detour! {
     static PresentHook: unsafe extern "stdcall" fn(
@@ -107,7 +107,7 @@ fn hk_present(
             }
             
             {
-                let mut old_wnd_proc_writable = OLD_WND_PROC.lock().unwrap();
+                let mut old_wnd_proc_writable = OLD_WND_PROC.write().unwrap();
                 *old_wnd_proc_writable = std::mem::transmute(SetWindowLongPtrA(
                     window,
                     GWLP_WNDPROC,
@@ -154,8 +154,10 @@ unsafe extern "stdcall" fn hk_wnd_proc(
         // ... and sometimes, SOMETIMES it pushes two events at the same time making
         // it freeze unless you handle the lock and skip some of the events.
         // The "sometimes" means "after you release the mouse button after clicking or dragging someting".
+        // The way to deal with it is to use a structure that allows multiple readers
+        // e.g. RwLock
         let result = {
-            match OLD_WND_PROC.try_lock() {
+            match OLD_WND_PROC.try_read() {
                 Ok(mut old_wnd_proc) => {
                     CallWindowProcW(old_wnd_proc.clone(), hwnd, msg, wparam, lparam)
                 },
