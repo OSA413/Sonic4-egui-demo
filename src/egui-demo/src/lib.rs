@@ -43,7 +43,9 @@ use retour::static_detour;
 use egui_d3d9::EguiDx9;
 use windows_core::BOOL;
 use std::{
-    cell::RefCell, mem::MaybeUninit, ops::DerefMut, sync::{Arc, LazyLock, Mutex, Once, RwLock}, time::Duration
+    mem::MaybeUninit,
+    sync::{LazyLock, Mutex, Once, RwLock},
+    time::Duration,
 };
 
 #[unsafe(no_mangle)]
@@ -102,7 +104,7 @@ fn hk_present(
         unsafe {
             {
                 let mut app_writable = APP.lock().unwrap();
-                let mut app_writable = app_writable.get_mut().unwrap();
+                let app_writable = app_writable.get_mut().unwrap();
                 app_writable.write(EguiDx9::init(&dev, window, egui_window::ui, 0, true));
             }
             
@@ -155,7 +157,7 @@ unsafe extern "stdcall" fn hk_wnd_proc(
         // e.g. RwLock
         let result = {
             match OLD_WND_PROC.try_read() {
-                Ok(mut old_wnd_proc) => {
+                Ok(old_wnd_proc) => {
                     CallWindowProcW(old_wnd_proc.clone(), hwnd, msg, wparam, lparam)
                 },
                 Err(_) => {
