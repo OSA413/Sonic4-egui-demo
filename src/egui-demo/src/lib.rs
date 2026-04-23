@@ -144,12 +144,9 @@ unsafe extern "stdcall" fn hk_wnd_proc(
     // This method is spammed like 60 frames per second ...
     unsafe {
         {
-            match APP.try_lock() {
-                Ok(mut app) => {
-                    app.get_mut().unwrap().assume_init_mut().wnd_proc(msg, wparam, lparam);
-                }
-                Err(_) => {}
-            }
+            // This part usually doesn't crash
+            // This is OLD_WND_PROC that needs special treatment
+            APP.lock().unwrap().get_mut().unwrap().assume_init_mut().wnd_proc(msg, wparam, lparam);
         }
         // ... and sometimes, SOMETIMES it pushes two events at the same time making
         // it freeze unless you handle the lock and skip some of the events.
