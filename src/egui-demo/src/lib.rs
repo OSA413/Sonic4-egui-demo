@@ -113,7 +113,7 @@ fn hk_present(
                 *old_wnd_proc_writable = std::mem::transmute(SetWindowLongPtrA(
                     window,
                     GWLP_WNDPROC,
-                    hk_wnd_proc as *const() as i32,
+                    hk_wnd_proc as *const() as _,
                 ));
             }
         }
