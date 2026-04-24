@@ -8,7 +8,7 @@ crate-type = ["cdylib"]
 
 [dependencies]
 retour = { version = "=0.4.0-alpha.4", features = ["static-detour"]}
-windows = { path = "C:\\Users\\OSA413\\GitHub\\windows-rs\\crates\\libs\\windows", features = [
+windows = { version = "0.62.2", features = [
 	"Win32_UI_WindowsAndMessaging",
 	"Win32_Graphics_Direct3D9",
 	"Win32_Graphics_Gdi",
@@ -18,13 +18,11 @@ windows = { path = "C:\\Users\\OSA413\\GitHub\\windows-rs\\crates\\libs\\windows
 	"Win32_Security"
 ] }
 
-windows-sys = { path = "C:\\Users\\OSA413\\GitHub\\windows-rs\\crates\\libs\\sys" }
-windows-core = { path = "C:\\Users\\OSA413\\GitHub\\windows-rs\\crates\\libs\\core" }
-
+windows-sys = "0.61.2"
+windows-core = "0.62.2"
 # shroud = { version = "0.2.3", features = ["directx9"] }
 shroud = { git = "https://github.com/ohchase/shroud", branch = "copilot/fix-4fe0fc7d-d5ea-4f92-b5a9-792b1abf5541", features = ["directx9"] }
 egui = "0.31"
 # egui-d3d9 = "0.3.9"
-# egui-d3d9 = { git = "https://github.com/OSA413/egui-d3d9" }
-egui-d3d9 = { path = "C:\\Users\\OSA413\\GitHub\\egui-d3d9\\egui-d3d9" }
+egui-d3d9 = { git = "https://github.com/OSA413/egui-d3d9", rev = "86aa34d3db2adb69e8682a1f57963e886d23a230" }
 egui_extras = {version = "0.31", features = ["webp"]}
