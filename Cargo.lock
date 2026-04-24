@@ -120,7 +120,7 @@ dependencies = [
 [[package]]
 name = "egui-d3d9"
 version = "0.3.9"
-source = "git+https://github.com/OSA413/egui-d3d9?rev=86aa34d3db2adb69e8682a1f57963e886d23a230#86aa34d3db2adb69e8682a1f57963e886d23a230"
+source = "git+https://github.com/OSA413/egui-d3d9?rev=54030aa785094a84b5b7f105524cfaeda7d84373#54030aa785094a84b5b7f105524cfaeda7d84373"
 dependencies = [
  "clipboard",
  "egui",

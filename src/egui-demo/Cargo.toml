@@ -24,5 +24,5 @@ windows-core = "0.62.2"
 shroud = { git = "https://github.com/ohchase/shroud", branch = "copilot/fix-4fe0fc7d-d5ea-4f92-b5a9-792b1abf5541", features = ["directx9"] }
 egui = "0.31"
 # egui-d3d9 = "0.3.9"
-egui-d3d9 = { git = "https://github.com/OSA413/egui-d3d9", rev = "86aa34d3db2adb69e8682a1f57963e886d23a230" }
+egui-d3d9 = { git = "https://github.com/OSA413/egui-d3d9", rev = "54030aa785094a84b5b7f105524cfaeda7d84373" }
 egui_extras = {version = "0.31", features = ["webp"]}
